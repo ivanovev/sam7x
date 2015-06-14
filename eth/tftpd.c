@@ -10,6 +10,8 @@
 
 #include "util.h"
 #include "efc.h"
+#include "pcl/picol.h"
+#include "pcl/pcl_sam.h"
 
 enum
 {
@@ -132,13 +134,24 @@ static void tftpd_wrq(uint8_t *data, uint16_t sz)
     if(!strncmp(name, "script.pcl", 10))
     {
         tfs.crc = 0;
+        tfs.trxdev = TRX_EFC;
     }
     else if((name[8] == '.') && !strncmp(&name[9], "bin", 3))
     {
         tfs.crc = strtoul(name, 0, 16);
+        tfs.trxdev = TRX_EFC;
     }
     else
-        return tftpd_nak(TFTP_ENOTFOUND);
+    {
+        char tmp[64];
+        snprintf("tftp_wrq_cb %s", sizeof(tmp), name);
+        int ret = pcl_exec(tmp, 0);
+        if(ret != PICOL_OK)
+        {
+            print1("file not found");
+            return tftpd_nak(TFTP_ENOTFOUND);
+        }
+    }
     tfs.ackn = 0;
     tfs.mode = TFTP_WRQ;
     tfs.start = EFC1_START;
@@ -206,6 +219,7 @@ static void tftpd_rrq(uint8_t *data, uint16_t sz)
             tfs.ackn = 0;
             return;
         }
+        tfs.trxdev = TRX_EFC;
         tfs.mode = TFTP_RRQ;
         tftpd_data_out(data, sz);
         return;
@@ -214,9 +228,21 @@ static void tftpd_rrq(uint8_t *data, uint16_t sz)
     {
         tfs.start = EFC1_START;
         tfs.end = tfs.start + efc1_fsz();
+        tfs.trxdev = TRX_EFC;
         tfs.mode = TFTP_RRQ;
         tftpd_data_out(data, sz);
         return;
+    }
+    else
+    {
+        char tmp[64];
+        snprintf("tftp_rrq_cb %s", sizeof(tmp), name);
+        int ret = pcl_exec(tmp, 0);
+        if(ret != PICOL_OK)
+        {
+            print1("file not found");
+            return tftpd_nak(TFTP_ENOTFOUND);
+        }
     }
 }
 

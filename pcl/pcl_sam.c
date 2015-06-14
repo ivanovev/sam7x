@@ -12,6 +12,7 @@
 #include "pcl_sam.h"
 #include "uip.h"
 #include "events.h"
+#include "eth/tftpd.h"
 
 #include <stdio.h>
 
@@ -704,39 +705,47 @@ static int pcl_temp(picolInterp *i, int argc, char **argv, void *pd)
     //sprintf(buf,"%f", temp);
     return picolSetResult(i,buf);
 }
-static int pcl_free(picolInterp *i, int argc, char **argv, void *pd)
+static int pcl_sys(picolInterp *i, int argc, char **argv, void *pd)
 {
-    (void)argc;
-    (void)argv;
-    (void)pd;
-    return picolSetIntResult(i,chCoreStatus());
-}
-static int pcl_uptime(picolInterp *i, int argc, char **argv, void *pd)
-{
-    (void)pd;
-    char buf[32];
-    int8_t ms = 0;
-    if(argc > 1)
+    char buf[MAXSTR];
+    buf[0] = 0;
+    ARITY2(argc >= 2, "sys ram|version|...");
+    if(SUBCMD("ram"))
     {
-	if(!strncmp(argv[1], "ms", 2))
-	    ms = 1;
-	else
-	    ms = atoi(argv[1]);
+        return picolSetIntResult(i,chCoreStatus());
     }
-    uptime_str(buf, sizeof(buf), ms);
-    return picolSetResult(i,buf);
-}
-static int pcl_version(picolInterp *i, int argc, char **argv, void *pd)
-{
-    (void)argc;
-    (void)argv;
-    (void)pd;
-    char buf[32];
-    if((argc > 1) ? !strncmp(argv[1], "date", 4) : 0)
+    if(SUBCMD("date"))
+    {
         version_date_str(buf, sizeof(buf));
-    else
+        return picolSetResult(i,buf);
+    }
+    if(SUBCMD("version"))
+    {
         version_str(buf, sizeof(buf));
-    return picolSetResult(i,buf);
+        return picolSetResult(i,buf);
+    }
+    if(SUBCMD("uptime"))
+    {
+        uptime_str(buf, sizeof(buf), 0);
+        return picolSetResult(i,buf);
+    }
+    if(SUBCMD("temp"))
+    {
+        float temp = 0;
+        int8_t nspi = 17;
+        if(argc > 2)
+            nspi = atoi(argv[2]);
+        spi1_get_temp(&temp, nspi);
+        double2str(buf, sizeof(buf), temp, 2);
+        return picolSetResult(i,buf);
+    }
+    return PICOL_ERR;
+}
+static int pcl_tftp(picolInterp *i, int argc, char **argv, void *pd)
+{
+    char buf[MAXSTR];
+    buf[0] = 0;
+    return PICOL_OK;
 }
 static int pcl_sleep(picolInterp *i, int argc, char **argv, void *pd)
 {
@@ -957,11 +966,9 @@ void pcl_init(void)
     picolRegisterCmd(interp, "adc", pcl_adc, NULL);
     picolRegisterCmd(interp, "adc_cmp", pcl_adc_cmp, NULL);
     picolRegisterCmd(interp, "assert", pcl_assert, NULL);
-    picolRegisterCmd(interp, "version", pcl_version, NULL);
     picolRegisterCmd(interp, "floor", pcl_floor, NULL);
     picolRegisterCmd(interp, "gpio", pcl_gpio, NULL);
     picolRegisterCmd(interp, "efc", pcl_efc, NULL);
-    picolRegisterCmd(interp, "free", pcl_free, NULL);
     picolRegisterCmd(interp, "hex", pcl_hex, NULL);
     picolRegisterCmd(interp, "int", pcl_int, NULL);
     picolRegisterCmd(interp, "interpolate", pcl_interpolate, NULL);
@@ -977,9 +984,9 @@ void pcl_init(void)
     picolRegisterCmd(interp, "sleep", pcl_sleep, NULL);
     picolRegisterCmd(interp, "spi", pcl_spi, NULL);
     picolRegisterCmd(interp, "uart", pcl_uart, NULL);
-    picolRegisterCmd(interp, "temp", pcl_temp, NULL);
     picolRegisterCmd(interp, "timer", pcl_timer, NULL);
-    picolRegisterCmd(interp, "uptime", pcl_uptime, NULL);
+    picolRegisterCmd(interp, "sys", pcl_sys, NULL);
+    picolRegisterCmd(interp, "tftp", pcl_tftp, NULL);
 #if 0
     picolRegisterCmd(interp, "sdw", pcl_sdw, NULL);
     picolRegisterCmd(interp, "sdr", pcl_sdr, NULL);

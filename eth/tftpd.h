@@ -27,11 +27,17 @@ typedef struct {
     char    e_msg[];
 } TFTP_ERR_PKT;
 
+#define TRX_NONE 0
+#define TRX_EFC 1
+#define TRX_SPI 2
+
 struct tftpd_state {
     uint16_t ackn;
     uint16_t mode;
     uint32_t start, end;
     uint32_t crc;
+    uint8_t trxdev;
+    uint8_t nspi;
     struct uip_udp_conn *conn;
 };
 
