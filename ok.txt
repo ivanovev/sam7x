@@ -1,0 +1,12 @@
+Open On-Chip Debugger 0.7.0 (2013-05-15-17:28)
+Licensed under GNU GPL v2
+For bug reports, read
+    http://openocd.sourceforge.net/doc/doxygen/bugs.html
+Info : only one transport option; autoselect 'jtag'
+adapter speed: 100 kHz
+srst_only srst_pulls_trst srst_gates_jtag srst_open_drain connect_deassert_srst
+Info : clock speed 100 kHz
+Info : JTAG tap: sam7x512.cpu tap/device found: 0x3f0f0f0f (mfg: 0x787, part: 0xf0f0, ver: 0x3)
+Info : Embedded ICE version 1
+Info : sam7x512.cpu: hardware has 2 breakpoint/watchpoint units
+Info : accepting 'telnet' connection from 4444
