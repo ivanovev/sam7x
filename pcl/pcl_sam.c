@@ -90,11 +90,13 @@ static int pcl_mdio(picolInterp *i, int argc, char **argv, void *pd)
 }
 static int pcl_pio(picolInterp *i, int argc, char **argv, uint8_t pio)
 {
-    ARITY2(argc >= 2, "pio[a|b] [per|pdr|psr|asr|bsr|absr|pudr|puer|pusr|oer|odr|osr] ...");
+    const char *hlp = "pio[a|b] [per|pdr|psr|asr|bsr|absr|pudr|puer|pusr|oer|odr|osr] ...";
+    ARITY2(argc >= 2, hlp);
+    char buf[16];
+    buf[0] = 0;
     if(argc == 2)
     {
         unsigned int reg = gpio_get_reg(argv[1], pio);
-        char buf[16];
         sprintf(buf, "0x%.8X", reg);
         return picolSetResult(i, buf);
     }
@@ -103,7 +105,7 @@ static int pcl_pio(picolInterp *i, int argc, char **argv, uint8_t pio)
         gpio_set_reg(argv[1], argv[2], pio);
         return PICOL_OK;
     }
-    return PICOL_ERR;
+    return picolErr(hlp);
 }
 static int pcl_pioa(picolInterp *i, int argc, char **argv, void *pd)
 {
@@ -430,32 +432,6 @@ static int pcl_efc(picolInterp *i, int argc, char **argv, void *pd)
     {
 	    return picolSetIntResult(i, efc1_fsz());
     }
-#if 0
-    else if(!strncmp(argv[1], "tx", 2))
-    {
-        sz = efc1_fsz();
-        tx_efc(sz);
-        return picolSetIntResult(i, sz);
-    }
-    else if(!strncmp(argv[1], "rx", 2))
-    {
-        if(argc < 5)
-            return PICOL_ERR;
-        eventmask_t mask = 0;
-        if(!strncmp(argv[3], "pcl", 3))
-            mask = EVT_PCLUPD;
-        else if(!strncmp(argv[3], "fw", 2))
-            mask = EVT_FWUPG;
-        if(mask)
-        {
-            sz = str2int(argv[2]);
-            rx_efc(sz, mask, argv[4]);
-            return picolSetResult(i, argv[2]);
-        }
-        else
-            return picolSetIntResult(i, -1);
-    }
-#endif
     else if(!strncmp(argv[1], "crc", 3))
     {
         uint32_t n = 1;
@@ -513,6 +489,11 @@ static int pcl_efc(picolInterp *i, int argc, char **argv, void *pd)
         uint8_t *ma = mac_addr.i8;
         snprintf(buf, sizeof(buf), "%.2X:%.2X:%.2X:%.2X:%.2X:%.2X", ma[0], ma[1], ma[2], ma[3], ma[4], ma[5]);
         return picolSetResult(i, buf);
+    }
+    else if(SUBCMD("temp"))
+    {
+        efc1_erase();
+        return PICOL_OK;
     }
     return PICOL_ERR;
 }

@@ -38,7 +38,8 @@ struct tftpd_state {
     uint32_t crc;
     uint8_t trxdev;
     uint8_t nspi;
-    struct uip_udp_conn *conn;
+    struct uip_udp_conn *conn1;
+    struct uip_udp_conn *conn2;
 };
 
 void tftpd_init(void);

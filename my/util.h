@@ -2,6 +2,8 @@
 #ifndef __UTIL_H_
 #define __UTIL_H_
 
+#include <stdint.h>
+
 unsigned int	rnd_seed(void);
 
 void    print_info(void);

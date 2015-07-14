@@ -21,9 +21,6 @@
 #define EFCX_ADDR(start, p) (uint32_t*)(start + (p << 8))
 #define ADDR_IS_EFC1(addr) ((EFC1_START <= addr) && (addr < EFC1_END))
 
-char efc_databuf[EFC_PAGE_SZ];
-int efc_counter = 0;
-
 __attribute__ ((long_call, section (".ramtext"))) void efc1_command(int page, int command)
 {
     uint32_t *ptr;
@@ -216,6 +213,8 @@ void efc1_write_page(char *data, int len, int page)
 
 void efc1_write_data(char *data, uint16_t datalen, uint32_t offset, uint8_t end)
 {
+    static int efc_counter = 0;
+    static char efc_databuf[EFC_PAGE_SZ];
     uint16_t page = offset / EFC_PAGE_SZ;
     if(offset == 0)
         efc_counter = 0;

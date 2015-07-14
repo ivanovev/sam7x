@@ -58,10 +58,10 @@ extern Thread* maintp;
 
 void tftpd_init(void)
 {
-    uip_ipaddr_t addr;
-    uip_ipaddr(addr, 255,255,255,255);
-    tfs.conn = uip_udp_new(&addr, 0);
-    uip_udp_bind(tfs.conn, HTONS(69));
+    tfs.conn1 = uip_udp_new(0, 0);
+    uip_udp_bind(tfs.conn1, HTONS(69));
+    tfs.conn2 = uip_udp_new(0, 0);
+    uip_udp_bind(tfs.conn2, HTONS(69));
 
     tfs.ackn = 0;
     tfs.mode = 0;
@@ -120,6 +120,9 @@ static void tftpd_data_in(uint8_t *data, uint16_t sz)
 
 static void tftpd_wrq(uint8_t *data, uint16_t sz)
 {
+    tfs.crc = 0;
+    tfs.mode = 0;
+    tfs.ackn = 0;
     TFTP_PKT *pkt = (TFTP_PKT*)data; 
     char *name = (char*)pkt->data; 
     uint16_t len = strnlen(name, SEG_SZ);
@@ -133,7 +136,6 @@ static void tftpd_wrq(uint8_t *data, uint16_t sz)
     }
     if(!strncmp(name, "script.pcl", 10))
     {
-        tfs.crc = 0;
         tfs.trxdev = TRX_EFC;
     }
     else if((name[8] == '.') && !strncmp(&name[9], "bin", 3))
@@ -152,17 +154,22 @@ static void tftpd_wrq(uint8_t *data, uint16_t sz)
             return tftpd_nak(TFTP_ENOTFOUND);
         }
     }
-    tfs.ackn = 0;
+    if(efc1_fsz())
+    {
+        efc1_erase();
+        efc_ipaddr_write();
+        efc_macaddr_write();
+        efc_commit("eth", 0);
+    }
     tfs.mode = TFTP_WRQ;
     tfs.start = EFC1_START;
     tfs.end = EFC1_END;
-    memcpy(tfs.conn->ripaddr, UDPBUF->srcipaddr, sizeof(uip_ipaddr_t));
-    tfs.conn->rport = UDPBUF->srcport;
     tftpd_ack();
 }
 
 static void tftpd_data_out(uint8_t *data, uint16_t sz)
 {
+    print1("tftpd_data_out");
     if(tfs.mode == 0)
         return;
     TFTP_DATA_PKT *pkt = (TFTP_DATA_PKT*)data;
@@ -185,13 +192,13 @@ static void tftpd_data_out(uint8_t *data, uint16_t sz)
 
 static void tftpd_rrq(uint8_t *data, uint16_t sz)
 {
+    tfs.crc = 0;
+    tfs.mode = 0;
+    tfs.ackn = 1;
     TFTP_PKT *pkt = (TFTP_PKT*)data;
     char *name = (char*)pkt->data;
     uint16_t len = strnlen(name, SEG_SZ);
     char *mode = name + len + 1;
-    tfs.ackn = 1;
-    memcpy(tfs.conn->ripaddr, UDPBUF->srcipaddr, sizeof(uip_ipaddr_t));
-    tfs.conn->rport = UDPBUF->srcport;
     print1("tftpd_rrq");
     print1(name);
     if(strncmp(mode, "binary", SEG_SZ) && strncmp(mode, "octet", SEG_SZ))
@@ -235,14 +242,8 @@ static void tftpd_rrq(uint8_t *data, uint16_t sz)
     }
     else
     {
-        char tmp[64];
-        snprintf("tftp_rrq_cb %s", sizeof(tmp), name);
-        int ret = pcl_exec(tmp, 0);
-        if(ret != PICOL_OK)
-        {
-            print1("file not found");
-            return tftpd_nak(TFTP_ENOTFOUND);
-        }
+        print1("file not found");
+        return tftpd_nak(TFTP_ENOTFOUND);
     }
 }
 
@@ -250,6 +251,27 @@ void tftpd_appcall(void)
 {
     if(!uip_newdata())
         return;
+    print2("udp_conn", uip_udp_conn);
+    print2("conn1", tfs.conn1);
+    print2("conn2", tfs.conn2);
+    if(uip_udp_conn == tfs.conn1)
+    {
+        print1("conn1");
+        memcpy(tfs.conn1->ripaddr, UDPBUF->srcipaddr, sizeof(uip_ipaddr_t));
+        tfs.conn1->rport = UDPBUF->srcport;
+        memset(tfs.conn2->ripaddr, 0, sizeof(uip_ipaddr_t));
+        tfs.conn2->rport = 0;
+    }
+    else if(uip_udp_conn == tfs.conn2)
+    {
+        print1("conn2");
+        memcpy(tfs.conn2->ripaddr, UDPBUF->srcipaddr, sizeof(uip_ipaddr_t));
+        tfs.conn2->rport = UDPBUF->srcport;
+        memset(tfs.conn1->ripaddr, 0, sizeof(uip_ipaddr_t));
+        tfs.conn1->rport = 0;
+    }
+    else
+        print1("conn?");
     TFTP_PKT *pkt = (TFTP_PKT*)uip_appdata;
     if(HTONS(pkt->opcode) == TFTP_WRQ)
         return tftpd_wrq(uip_appdata, uip_datalen());
@@ -265,8 +287,8 @@ void tftpd_cb(void)
 {
     if((tfs.mode != 0) && (tfs.ackn == 0))
     {
-        memset(tfs.conn->ripaddr, 0, sizeof(uip_ipaddr_t));
-        tfs.conn->rport = 0;
+        //memset(tfs.conn->ripaddr, 0, sizeof(uip_ipaddr_t));
+        //tfs.conn->rport = 0;
         if(tfs.crc)
         {
             if(tfs.crc == efc1_crc(efc1_fsz()))
