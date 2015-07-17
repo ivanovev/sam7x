@@ -251,12 +251,8 @@ void tftpd_appcall(void)
 {
     if(!uip_newdata())
         return;
-    print2("udp_conn", uip_udp_conn);
-    print2("conn1", tfs.conn1);
-    print2("conn2", tfs.conn2);
     if(uip_udp_conn == tfs.conn1)
     {
-        print1("conn1");
         memcpy(tfs.conn1->ripaddr, UDPBUF->srcipaddr, sizeof(uip_ipaddr_t));
         tfs.conn1->rport = UDPBUF->srcport;
         memset(tfs.conn2->ripaddr, 0, sizeof(uip_ipaddr_t));
@@ -264,7 +260,6 @@ void tftpd_appcall(void)
     }
     else if(uip_udp_conn == tfs.conn2)
     {
-        print1("conn2");
         memcpy(tfs.conn2->ripaddr, UDPBUF->srcipaddr, sizeof(uip_ipaddr_t));
         tfs.conn2->rport = UDPBUF->srcport;
         memset(tfs.conn1->ripaddr, 0, sizeof(uip_ipaddr_t));

@@ -170,14 +170,24 @@ static int pcl_gpio(picolInterp *i, int argc, char **argv, void *pd)
         uint8_t gpio = gpio_read(atoi(argv[1]));
         return picolSetIntResult(i, gpio);
     }
-    else if(argc == 3)
+    else if(argc >= 3)
     {
         uint8_t n = atoi(argv[1]);
         if(!strncmp(argv[2], "odsr", 4))
             return picolSetIntResult(i, gpio_odsr(n));
         uint8_t val = atoi(argv[2]);
         gpio_write(n, val);
-        efc_gpio_write(n, val);
+        if(argc > 3)
+        {
+            if(atoi(argv[3]))
+            {
+                if(efc_gpio_read(n) != val)
+                {
+                    efc_gpio_write(n, val);
+                    efc_commit("gpio", n);
+                }
+            }
+        }
         return picolSetIntResult(i, val);
     }
     return PICOL_ERR;
@@ -269,18 +279,19 @@ static int pcl_spi(picolInterp *i, int argc, char **argv, void *pd)
         uint8_t loop = 0;
         uint8_t ncpha1 = ncpha;
         uint8_t cpol1 = cpol;
+        u32 = 0;
         
         if(argc >= 4)
-            loop = !strncmp(argv[3], "loop", 4);
+            loop = !strncmp(argv[argc-1], "loop", 4);
         if(!loop)
         {
             if(argc >= 4)
-                ncpha1 = atoi(argv[3]);
+                cpol1 = (uint8_t)atoi(argv[argc-2]);
             if(argc >= 5)
-                cpol1 = atoi(argv[4]);
+                ncpha1 = (uint8_t)atoi(argv[argc-3]);
             if(argc >= 6)
             {
-                u32 = (uint32_t)atoi(argv[5]);
+                u32 = (uint32_t)atoi(argv[argc-1]);
                 if(u32 <= 63)
                     efc_spi_write(nspi, u32, str2int(data));
             }
@@ -338,7 +349,9 @@ static int pcl_efc(picolInterp *i, int argc, char **argv, void *pd)
     (void)pd;
     ARITY2(argc >= 2, "efc gpio|spi ...");
     char buf[33];
-    uint32_t sz;
+    uint32_t tmp1, tmp2;
+    uint32_t *ptr;
+    float f;
     if(!strncmp(argv[1], "gpio", 4))
     {
         if(argc == 3)
@@ -376,9 +389,19 @@ static int pcl_efc(picolInterp *i, int argc, char **argv, void *pd)
             else
             {
                 offset = atoi(argv[3]);
+                efcdata = efc_spi_read(spi, offset);
                 int len = 4;
                 if(argc >= 5)
-                    len = atoi(argv[4]);
+                {
+                    if(strlen(argv[4]) > 1)
+                    {
+                        len = str2bytes(argv[4], buf1, 4);
+                        if(efcdata == 0xFFFFFFFF)
+                            return picolSetResult(i, argv[4]);
+                    }
+                    else
+                        len = atoi(argv[4]);
+                }
                 efc_spi_readstr(buf, spi, offset, len);
             }
             return picolSetResult(i, buf);
@@ -387,17 +410,19 @@ static int pcl_efc(picolInterp *i, int argc, char **argv, void *pd)
     }
     else if(!strncmp(argv[1], "commit", 6))
     {
-        static char commit_enable = 1;
+        int16_t commit_enable = efc_commit_enable(-1);
         if(argc == 2)
+        {
             return picolSetResult(i, commit_enable ? "ON" : "OFF");
+        }
         if(!strncmp(argv[2], "ON", 2))
         {
-            commit_enable = 1;
+            efc_commit_enable(1);
             return picolSetResult(i, "ON");
         }
         if(!strncmp(argv[2], "OFF", 3))
         {
-            commit_enable = 0;
+            efc_commit_enable(0);
             return picolSetResult(i, "OFF");
         }
         if((argc < 4) || (commit_enable == 0))
@@ -412,21 +437,55 @@ static int pcl_efc(picolInterp *i, int argc, char **argv, void *pd)
     }
     else if(!strncmp(argv[1], "mr", 2))
     {
-        if(argc < 4)
+        if(argc == 3)
+        {
+            tmp1 = str2int(argv[2]);
+            tmp2 = efc1_readwa(tmp1);
+            if(!strncmp(argv[1], "mrf", 3))
+            {
+                ptr = (uint32_t*)(&f);
+                *ptr = tmp2;
+                double2str(buf, sizeof(buf), f, 2);
+            }
+            else
+                sprintf(buf, "0x%.8X", tmp2);
+            return picolSetResult(i, buf);
+        }
+        else if(argc == 4)
+        {
+            uint16_t page = str2int(argv[2]);
+            uint8_t offset = str2int(argv[3]);
+            sprintf(buf, "0x%.8X", (unsigned int)efc1_readw(page, offset));
+            return picolSetResult(i, buf);
+        }
+        else
             return PICOL_ERR;
-        uint16_t page = str2int(argv[2]);
-        uint8_t offset = str2int(argv[3]);
-		sprintf(buf, "0x%.8X", (unsigned int)efc1_readw(page, offset));
-	    return picolSetResult(i, buf);
     }
     else if(!strncmp(argv[1], "mw", 2))
     {
-        if(argc < 5)
+        if(argc == 4)
+        {
+            tmp1 = str2int(argv[2]);
+            if(!strncmp(argv[1], "mwf", 3))
+            {
+                f = atof(argv[3]);
+                ptr = (uint32_t*)(&f);
+                tmp2 = *ptr;
+            }
+            else
+                tmp2 = str2int(argv[3]);
+            efc1_writewa(tmp1, tmp2);
+            return picolSetResult(i, argv[3]);
+        }
+        else if(argc == 5)
+        {
+            uint16_t page = str2int(argv[2]);
+            uint8_t offset = str2int(argv[3]);
+            efc1_writew(page, offset, str2int(argv[4]));
+            return picolSetResult(i, argv[4]);
+        }
+        else
             return PICOL_ERR;
-        uint16_t page = str2int(argv[2]);
-        uint8_t offset = str2int(argv[3]);
-        efc1_writew(page, offset, str2int(argv[4]));
-	    return picolSetResult(i, argv[4]);
     }
     else if(!strncmp(argv[1], "fsz", 3))
     {
@@ -490,9 +549,12 @@ static int pcl_efc(picolInterp *i, int argc, char **argv, void *pd)
         snprintf(buf, sizeof(buf), "%.2X:%.2X:%.2X:%.2X:%.2X:%.2X", ma[0], ma[1], ma[2], ma[3], ma[4], ma[5]);
         return picolSetResult(i, buf);
     }
-    else if(SUBCMD("temp"))
+    else if(SUBCMD("erase"))
     {
         efc1_erase();
+        efc_ipaddr_write();
+        efc_macaddr_write();
+        efc_commit("eth", 0);
         return PICOL_OK;
     }
     return PICOL_ERR;

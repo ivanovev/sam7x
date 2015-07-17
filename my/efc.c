@@ -44,11 +44,24 @@ void efc1_erase(void)
     chThdSleepMilliseconds(100);
 }
 
+uint32_t efc1_readwa(uint32_t addr)
+{
+    uint32_t *ptr = (uint32_t*)addr;
+    return *ptr;
+}
+
 uint32_t efc1_readw(uint16_t page, uint8_t offset)
 {
     uint32_t *ptr = EFC1_ADDR((page));
     ptr += offset;
     return *ptr;
+}
+
+void efc1_writewa(uint32_t addr, uint32_t value)
+{
+    uint32_t *ptr = (uint32_t*)addr;
+    if(ADDR_IS_EFC1(ptr))
+        *ptr = value;
 }
 
 void efc1_writew(uint16_t page, uint8_t offset, uint32_t value)
@@ -59,9 +72,18 @@ void efc1_writew(uint16_t page, uint8_t offset, uint32_t value)
         *ptr = value;
 }
 
-void efc_commit(char *intf, uint16_t n)
+int32_t efc_commit(char *intf, uint32_t n)
 {
     uint16_t page = 0;
+    static uint16_t enable = 1;
+    if(!strncmp(intf, "enable", 6))
+    {
+        if((n == 0) || (n == 1))
+            enable = n;
+        return enable;
+    }
+    if(enable == 0)
+        return 0;
     if(!strncmp(intf, "gpio", 4) && (n < 64))
         page = EFC_PAGE_GPIO + n;
     else if(!strncmp(intf, "spi", 3) && (n < 32))
@@ -70,9 +92,26 @@ void efc_commit(char *intf, uint16_t n)
         page = EFC_PAGE_ETH_ADDR;
     else if(!strncmp(intf, "page", 4))
         page = n;
+    else if(!strncmp(intf, "addr", 4))
+    {
+        if(ADDR_IS_EFC1(n))
+        {
+            n -= EFC1_START;
+            n /= EFC_PAGE_SZ;
+            page = n;
+        }
+        else
+            return 0;
+    }
     print2("commit", page);
     if(page != 0)
         call_efc1_command_from_ram(page, 1);
+    return 0;
+}
+
+int16_t efc_commit_enable(int16_t enable)
+{
+    return efc_commit("enable", enable);
 }
 
 uint8_t efc_gpio_read(uint8_t n)

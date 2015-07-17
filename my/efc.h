@@ -22,9 +22,12 @@ union MAC_Addr
 
 void	    efc_init(void);
 
+uint32_t    efc1_readwa(uint32_t addr);
 uint32_t    efc1_readw(uint16_t page, uint8_t offset);
 void        efc1_writew(uint16_t page, uint8_t offset, uint32_t value);
-void        efc_commit(char *intf, uint16_t n);
+void        efc1_writewa(uint32_t addr, uint32_t value);
+int32_t     efc_commit(char *intf, uint32_t n);
+int16_t     efc_commit_enable(int16_t enable);
 
 uint8_t	    efc_gpio_read(uint8_t n);
 void	    efc_gpio_write(uint8_t n, uint8_t v);
