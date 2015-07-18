@@ -132,7 +132,7 @@ static int pcl_adc(picolInterp *i, int argc, char **argv, void *pd)
 	else
 	{
 	    double f = a*atof(argv[2])/1023.;
-	    double2str(buf, sizeof(buf), f, 2);
+	    double2str(buf, sizeof(buf), f, "2");
 	}
 	return picolSetResult(i, buf);
     }
@@ -445,7 +445,7 @@ static int pcl_efc(picolInterp *i, int argc, char **argv, void *pd)
             {
                 ptr = (uint32_t*)(&f);
                 *ptr = tmp2;
-                double2str(buf, sizeof(buf), f, 2);
+                double2str(buf, sizeof(buf), f, "2");
             }
             else
                 sprintf(buf, "0x%.8X", tmp2);
@@ -567,11 +567,11 @@ static int pcl_ord(picolInterp *i, int argc, char **argv, void *pd)
     uint32_t j, len = strlen(argv[1]);
     for(j = 0; j < len; j++)
     {
-	if(3*(j + 1) >= sizeof(buf))
-	    break;
-	if(j)
-	    buf[3*(j % 3) - 1] = ' ';
-	sprintf(&(buf[3*j]), "%.2X", argv[1][j]);
+        if(3*(j + 1) >= sizeof(buf))
+            break;
+        if(j)
+            buf[3*(j % 3) - 1] = ' ';
+        sprintf(&(buf[3*j]), "%.2X", argv[1][j]);
     }
     return picolSetResult(i,buf);
 }
@@ -744,7 +744,7 @@ static int pcl_temp(picolInterp *i, int argc, char **argv, void *pd)
     if(argc > 1)
         nspi = atoi(argv[1]);
     spi1_get_temp(&temp, nspi);
-    double2str(buf, sizeof(buf), temp, 2);
+    double2str(buf, sizeof(buf), temp, "2");
     //sprintf(buf,"%f", temp);
     return picolSetResult(i,buf);
 }
@@ -779,7 +779,7 @@ static int pcl_sys(picolInterp *i, int argc, char **argv, void *pd)
         if(argc > 2)
             nspi = atoi(argv[2]);
         spi1_get_temp(&temp, nspi);
-        double2str(buf, sizeof(buf), temp, 2);
+        double2str(buf, sizeof(buf), temp, "2");
         return picolSetResult(i,buf);
     }
     return PICOL_ERR;
@@ -852,13 +852,11 @@ static int pcl_round(picolInterp *i, int argc, char **argv, void *pd)
     (void)pd;
     ARITY2(argc>=2, "round float precision");
     double f = atof(argv[1]);
-    int p = 0;
+    char *pr = "0";
     if(argc >= 3)
-	p = atoi(argv[2]);
-    if(p > 6)
-	p = 6;
+        pr = argv[2];
     char buf[24];
-    double2str(buf, sizeof(buf), f, p);
+    double2str(buf, sizeof(buf), f, pr);
     return picolSetResult(i, buf);
 }
 static int pcl_floor(picolInterp *i, int argc, char **argv, void *pd)
@@ -896,24 +894,39 @@ static int pcl_interpolate(picolInterp *i, int argc, char **argv, void *pd)
 	y1 = y2;
     }
     char buf[24];
-    double2str(buf, sizeof(buf), y, 6);
+    double2str(buf, sizeof(buf), y, "6");
     return picolSetResult(i,buf);
 }
 static int pcl_minmax(picolInterp *i, int argc, char **argv, void *pd)
 {
     (void)pd;
     ARITY2(argc>=3, "min|max val1 val2 ...");
-    bool_t max = !strncmp(argv[0], "max", 3);
-    double f = atof(argv[1]), f1;
-    int j;
-    for(j = 2; j < argc; j++)
-    {
-	f1 = atof(argv[j]);
-	if(max ? (f1 > f) : (f1 < f))
-	    f = f1;
-    }
     char buf[16];
-    double2str(buf, sizeof(buf), f, 6);
+    buf[0] = 0;
+    double f = 0, f1, f2;
+    if(strlen(argv[0] == 3))
+    {
+        bool_t max = !strncmp(argv[0], "max", 3);
+        f = atof(argv[1]);
+        int j;
+        for(j = 2; j < argc; j++)
+        {
+            f1 = atof(argv[j]);
+            if(max ? (f1 > f) : (f1 < f))
+                f = f1;
+        }
+    }
+    if(argc == 4)
+    {
+        f1 = atof(argv[1]);
+        f2 = atof(argv[2]);
+        f = atof(argv[3]);
+        if(f < f1)
+            f = f1;
+        else if(f > f2)
+            f = f2;
+    }
+    double2str(buf, sizeof(buf), f, "6");
     return picolSetResult(i, buf);
 }
 static int pcl_print(picolInterp *i, int argc, char **argv, void *pd)
@@ -988,7 +1001,7 @@ int pcl_doubleMath(picolInterp *i, int argc, char **argv, void *pd)
     /*ARITY2"!= a b"*/
     else if (EQ(argv[0],"!=")) {ARITY(argc==3) c = a != b;}
     char buf[24];
-    double2str(buf, sizeof(buf), c, 6);
+    double2str(buf, sizeof(buf), c, "6");
     return picolSetResult(i, buf);
 }
 
@@ -1017,6 +1030,7 @@ void pcl_init(void)
     picolRegisterCmd(interp, "interpolate", pcl_interpolate, NULL);
     picolRegisterCmd(interp, "max", pcl_minmax, NULL);
     picolRegisterCmd(interp, "min", pcl_minmax, NULL);
+    picolRegisterCmd(interp, "minmax", pcl_minmax, NULL);
     picolRegisterCmd(interp, "ord", pcl_ord, NULL);
     picolRegisterCmd(interp, "pioa", pcl_pioa, NULL);
     picolRegisterCmd(interp, "piob", pcl_piob, NULL);

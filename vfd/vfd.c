@@ -299,13 +299,13 @@ static void vfd_menu_change_double_val(vfd_menu_item *item, int8_t step, int8_t 
 	if(imm)
 	{
 	    char *tmp;
-	    double2str(buf1, sizeof(buf1), f, 2);
+	    double2str(buf1, sizeof(buf1), f, "2");
 	    snprintf(buf, sizeof(buf), "%s %s", item->edit->set, buf1);
 	    pcl_exec(buf, &tmp);
 	}
 	item->edit->data.d_f.cur = f;
     }
-    double2str(buf, sizeof(buf), item->edit->data.d_f.cur, 2);
+    double2str(buf, sizeof(buf), item->edit->data.d_f.cur, "2");
     vfd_str(buf);
 }
 

@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-unsigned int rnd_seed(void)
+uint32_t rnd_seed(void)
 {
     uint32_t s = 0;
     uint8_t i;
@@ -202,42 +202,66 @@ int str2bytes(const char *in, uint8_t *out, int maxlen)
     return len;
 }
 
-int double2str(char *buf, int len, double f, unsigned int p)
+int double2str(char *buf, int len, double f, char *pr)
 {
-    if(p <= 0)
-    {
-	return snprintf(buf, len, "%d", (int)(f + .5));
-    }
     unsigned int d1, d2, i;
     double af = (f >= 0) ? f : -f;
     d1 = af;
     double f2 = af - d1;
     double f3 = 1;
+    int p = 0, half = 0;
+    if(!strncmp(pr, "0.5", 3))
+    {
+        p = 1;
+        half = 1;
+    }
+    else
+        p = str2int(pr);
+    if(p <= 0)
+    {
+        return snprintf(buf, len, "%d", (int)(f + .5));
+    }
     if(p >= 6) p = 6;
     for(i = 0; i < p; i++)
     {
-	f2 *= 10;
-	f3 *= 10;
+        f2 *= 10;
+        f3 *= 10;
     }
-    f2 += .5;
-    if(f2 >= f3)
+    if(half == 0)
     {
-	f2 = 0;
-	d1 += 1;
+        f2 += 0.5;
+        if(f2 >= f3)
+        {
+            f2 = 0;
+            d1 += 1;
+        }
+    }
+    else
+    {
+        if((f2 + 2.5) >= f3)
+        {
+            f2 = 0;
+            d1 += 1;
+        }
+        if((f2 - 2.5) <= (f3 - 10))
+            f2 = 0;
+        else
+            f2 = 5;
+
     }
     for(d2 = f2; d2 ? !(d2 % 10) : 0; d2 /= 10, p--);
     char fmt[16];
     if(!d2)
     {
-	if(f >= 0)
-	    return snprintf(buf, len, "%u", d1);
-	else
-	    return snprintf(buf, len, "-%u", d1);
+        if(f >= 0)
+            return snprintf(buf, len, "%u", d1);
+        else
+            return snprintf(buf, len, "-%u", d1);
     }
     if(f >= 0)
-	sprintf(fmt, "%%u.%%.%uu", p);
+        sprintf(fmt, "%%u.%%.%uu", p);
     else
-	sprintf(fmt, "-%%u.%%.%uu", p);
+        sprintf(fmt, "-%%u.%%.%uu", p);
     return snprintf(buf, len, fmt, d1, d2);
 }
 
