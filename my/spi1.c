@@ -321,9 +321,11 @@ int spi1_get_temp(float *temp, int8_t nspi)
     uint16_t t = (uint16_t)strtoul(out, 0, 16);
     t = (t >> 5);
     if(t & (1 << 9))
-        *temp = interpolate(0b1000000000, -128., 0b1111111111, -0.25, t);
+        *temp = interpolate(0x200, -128., 0x3FF, -0.25, t);
+    else if(!(t & 0x3))
+        *temp = interpolate(0x0, 0., 0xFC, 127., t);
     else
-        *temp = interpolate(0., 0., 0b0111111100, 127., t);
+        *temp = 0;
     return 0;
 }
 
