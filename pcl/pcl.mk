@@ -1,7 +1,7 @@
 
-CSRC += pcl/picol.c \
+PCLSRC = pcl/picol.c \
 		pcl/pcl_sam.c
 
-INCDIR += ./pcl
+PCLINC = pcl
 
 PCL = 1

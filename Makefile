@@ -77,7 +77,8 @@ CSRC += $(PORTSRC) \
        $(CHIBIOS)/os/various/evtimer.c \
 	$(CHIBIOS)/ext/uip-1.0/lib/memb.c \
        $(MYSRC) \
-       $(VFDSRC) \
+       $(BTNSRC) \
+       $(PCLSRC) \
 	board.c \
        main.c
 
@@ -113,7 +114,9 @@ INCDIR += $(PORTINC) $(KERNINC) $(TESTINC) \
          $(CHIBIOS)/os/various \
          $(CHIBIOS)/ext/uip-1.0/uip \
 	$(CHIBIOS)/ext/uip-1.0/lib \
-	$(MYINC)
+	$(MYINC) \
+	$(PCLINC) \
+	$(BTNINC)
 
 #
 # Project, sources and paths
@@ -121,7 +124,8 @@ INCDIR += $(PORTINC) $(KERNINC) $(TESTINC) \
 include eth/eth.mk
 PCL = 0
 include pcl/pcl.mk
-VFD = 0
+BTN = 0
+include btn/btn.mk
 include crc/crc.mk
 
 ##############################################################################
@@ -189,7 +193,7 @@ DLIBS =
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = -DPCL=$(PCL) -DVFD=$(VFD) -DVERBOSE_IO=$(VERBOSE_IO)
+UDEFS = -DPCL=$(PCL) -DBTN=$(BTN) -DVERBOSE_IO=$(VERBOSE_IO)
 
 # Define ASM defines here
 UADEFS =

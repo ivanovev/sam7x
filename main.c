@@ -128,11 +128,7 @@ int main(void) {
      */
     //uint32_t ts = 0, tnow, dt = CH_FREQUENCY;
     eventmask_t m;
-    eventmask_t waitmask = EVT_CMDSTART | EVT_CMDEND | EVT_PCLUPD | EVT_REBOOT | EVT_FWUPG;
-#if VFD
-    eventmask_t vfdmask = EVT_VFDN | EVT_VFDS | EVT_VFDW | EVT_VFDE;
-    waitmask |= vfdmask;
-#endif
+    eventmask_t waitmask = EVT_CMDSTART | EVT_CMDEND | EVT_PCLUPD | EVT_REBOOT | EVT_FWUPG | EVT_BTN;
     int ret = 0;
     char *out = 0;
     chThdSetPriority(NORMALPRIO);
@@ -175,6 +171,13 @@ int main(void) {
                 if(restart_os)
                     break;
             }
+#ifdef BTN
+            if(m & EVT_BTN)
+            {
+                pcl_btn_cb();
+                continue;
+            }
+#endif
 #if VFD
             else if(m & vfdmask)
             {

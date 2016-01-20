@@ -951,6 +951,34 @@ static int pcl_timer(picolInterp *i, int argc, char **argv, void *pd)
     return PICOL_OK;
 }
 
+#if BTN
+extern volatile uint32_t btn_isra, btn_isrb;
+static int pcl_btn(picolInterp *i, int argc, char **argv, void *pd)
+{
+    if(SUBCMD("isra"))
+        return picolSetIntResult(i, btn_isra);
+    if(SUBCMD("isrb"))
+        return picolSetIntResult(i, btn_isrb);
+    uint8_t j, btn;
+    for(j = 1; j < argc; j++)
+    {
+        if(argv[j][0] == 'a')
+        {
+            btn_irq_init(0);
+            continue;
+        }
+        if(argv[j][0] == 'b')
+        {
+            btn_irq_init(1);
+            continue;
+        }
+        btn = (uint8_t)str2int(argv[j]);
+        btn_irq_enable(btn);
+    }
+    return PICOL_OK;
+}
+#endif
+
 int pcl_bitMath(picolInterp *i, int argc, char **argv, void *pd)
 {
     (void)pd;
@@ -1021,6 +1049,9 @@ void pcl_init(void)
     picolEval(interp, "proc timer_cb {} {return 0;}");
     picolRegisterCmd(interp, "adc", pcl_adc, NULL);
     picolRegisterCmd(interp, "adc_cmp", pcl_adc_cmp, NULL);
+#if BTN
+    picolRegisterCmd(interp, "btn", pcl_btn, NULL);
+#endif
     picolRegisterCmd(interp, "assert", pcl_assert, NULL);
     picolRegisterCmd(interp, "floor", pcl_floor, NULL);
     picolRegisterCmd(interp, "gpio", pcl_gpio, NULL);
@@ -1069,6 +1100,15 @@ char* pcl_get_var(char *name)
     return 0;
 }
 
+#if BTN
+void pcl_btn_cb(void)
+{
+    uint16_t j;
+    char buf[32];
+    sprintf(buf, "btn_cb %d %d", btn_isra, btn_isrb);
+    pcl_exec(buf, 0);
+}
+#endif
 void pcl_load(void)
 {
     uint8_t buf[MAXSTR];

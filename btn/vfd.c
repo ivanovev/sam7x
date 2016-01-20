@@ -2,14 +2,14 @@
 #include "ch.h"
 #include "hal.h"
 #include "vfd.h"
-#include "vfd_irq.h"
+#include "btn_irq.h"
 #include "util.h"
 #include <stdlib.h>
 #include <string.h>
 
 #ifdef PCL
 #include "picol.h"
-#include "pcl.h"
+#include "pcl_sam.h"
 #endif
 
 typedef struct vfd_menu_state {

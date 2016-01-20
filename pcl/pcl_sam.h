@@ -11,6 +11,7 @@ int	        pcl_get_line_count(void);
 int	        pcl_get_str(char *buf, int len, int n);
 int32_t     pcl_get_chunksz(uint8_t *fptr, int32_t fsz);
 void	    pcl_load(void);
+void	    pcl_btn_cb(void);
 void	    pcl_lock(void);
 int	        pcl_try_lock(void);
 void	    pcl_unlock(void);
