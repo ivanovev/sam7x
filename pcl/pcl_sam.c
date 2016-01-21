@@ -286,12 +286,12 @@ static int pcl_spi(picolInterp *i, int argc, char **argv, void *pd)
         if(!loop)
         {
             if(argc >= 4)
-                cpol1 = (uint8_t)atoi(argv[argc-2]);
+                cpol1 = (uint8_t)atoi(argv[3]);
             if(argc >= 5)
-                ncpha1 = (uint8_t)atoi(argv[argc-3]);
+                ncpha1 = (uint8_t)atoi(argv[4]);
             if(argc >= 6)
             {
-                u32 = (uint32_t)atoi(argv[argc-1]);
+                u32 = (uint32_t)atoi(argv[5]);
                 if(u32 <= 63)
                     efc_spi_write(nspi, u32, str2int(data));
             }
