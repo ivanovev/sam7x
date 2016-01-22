@@ -772,6 +772,11 @@ static int pcl_sys(picolInterp *i, int argc, char **argv, void *pd)
         uptime_str(buf, sizeof(buf), 0);
         return picolSetResult(i,buf);
     }
+    if(SUBCMD("uptimems"))
+    {
+        uptime_str(buf, sizeof(buf), 1);
+        return picolSetResult(i,buf);
+    }
     if(SUBCMD("temp"))
     {
         float temp = 0;
