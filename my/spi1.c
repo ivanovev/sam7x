@@ -23,7 +23,7 @@ static SPIConfig spicfg1 = {
     NULL,
     IOPORT1,
     AT91C_PA12_SPI0_NPCS0,
-    (SPI1_SCBR << 8) | AT91C_SPI_NCPHA | AT91C_SPI_CPOL
+    (SPI1_SCBR << 8) | AT91C_SPI_NCPHA// | AT91C_SPI_CPOL
 };
 
 static SPIConfig spicfg2 = {
@@ -319,13 +319,11 @@ int spi1_get_temp(float *temp, int8_t nspi)
         return -1;
     out[4] = 0;
     uint16_t t = (uint16_t)strtoul(out, 0, 16);
-    t = (t >> 5);
+    t = (t >> 5) & 0x3FF;
     if(t & (1 << 9))
         *temp = interpolate(0x200, -128., 0x3FF, -0.25, t);
-    else if(!(t & 0x3))
-        *temp = interpolate(0x0, 0., 0xFC, 127., t);
     else
-        *temp = 0;
+        *temp = interpolate(0x0, 0., 0x1FC, 127., t);
     return 0;
 }
 

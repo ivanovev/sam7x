@@ -52,8 +52,8 @@
  * Initial I/O setup.
  */
 #define VAL_PIOA_ODSR           0x00000000      /* Output data. */
-#define VAL_PIOA_OSR            0x00000000      /* Direction. */
-#define VAL_PIOA_PUSR           0xFFFFFFFF      /* Pull-up. */
+#define VAL_PIOA_OSR            0x00040000      /* Direction. */
+#define VAL_PIOA_PUSR           0xFFFBFFFF      /* Pull-up. */
 
 #define VAL_PIOB_ODSR           0x00000000      /* Output data. */
 #define VAL_PIOB_OSR            0x00000000      /* Direction. */
