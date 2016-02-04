@@ -23,7 +23,7 @@ static SPIConfig spicfg1 = {
     NULL,
     IOPORT1,
     AT91C_PA12_SPI0_NPCS0,
-    (SPI1_SCBR << 8) | AT91C_SPI_NCPHA// | AT91C_SPI_CPOL
+    (SPI1_SCBR << 8) | AT91C_SPI_NCPHA | AT91C_SPI_CPOL
 };
 
 static SPIConfig spicfg2 = {
